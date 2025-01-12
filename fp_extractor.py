@@ -243,8 +243,8 @@ class GUI(tk.Tk):
             # 绑定输入框失去焦点事件
             entry.bind(
                 "<FocusOut>",
-                lambda e, entry=entry, text=default_text: self.on_focusout(
-                    e, entry, text
+                lambda e, entry=entry, text=default_text, n=name: self.on_focusout(
+                    e, entry, text, n
                 ),
             )
             entry.pack(side="top", padx=5)
@@ -260,6 +260,13 @@ class GUI(tk.Tk):
             result.pack(pady=5)
             # 保存result_label到fp_extractors
             self.fp_extractors[name].result_label = result
+            tmp_str = "0".zfill(self.fp_extractors[name].fp_fmt.width)
+            self.display_bits(
+                name,
+                tmp_str,
+                bits_frame,
+                self.fp_extractors[name].fp_fmt.width
+            )
 
     def _on_mousewheel(self, event, canvas):
         canvas.yview_scroll(int(-1 * (event.delta / 120)), "units")
@@ -270,10 +277,18 @@ class GUI(tk.Tk):
             entry.insert(0, "")
             entry.config(fg="black")
 
-    def on_focusout(self, event, entry, default_text):
+    def on_focusout(self, event, entry, default_text, name):
         if entry.get() == "":
             entry.insert(0, default_text)
             entry.config(fg="grey")
+            tmp_str = "0".zfill(self.fp_extractors[name].fp_fmt.width)
+            self.display_bits(
+                name,
+                tmp_str,
+                self.fp_extractors[name].bits_frame,
+                self.fp_extractors[name].fp_fmt.width
+            )
+
 
     def update_bits(self, fmt_name):
         extractor = self.fp_extractors[fmt_name]
@@ -294,6 +309,8 @@ class GUI(tk.Tk):
             except ValueError as e:
                 result_text = str(e)
             extractor.result_label.config(text=result_text)
+        else:
+            extractor.result_label.config(text="Please start with [0x] or [0b]")
 
     def display_bits(self, fmt_name, bin_str, frame, width):
         for widget in frame.winfo_children():

@@ -1,6 +1,6 @@
 # FP Extractor
 
-![效果图](./fp_extractor.png)
+![效果图](./gui.png)
 
 输入16进制或2进制数字，提取指定格式的符号，指数和尾数
 
