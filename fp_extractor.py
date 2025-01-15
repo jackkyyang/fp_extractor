@@ -159,22 +159,47 @@ class FPExtractor:
     def is_positive(self) -> bool:
         return self.sign == "0"
 
+    def get_e4m3_expression(
+        self, exponent_value: int, mantissa_value: int, sign: str
+    ) -> str:
+        """Get the expression for the FP8_E4M3 format"""
+
+        if exponent_value == 8 and mantissa_value == 7:
+            return "NaN"
+        elif exponent_value == -7:
+            if mantissa_value == 0:
+                return "+Zero" if sign == "1" else "-Zero"
+            else:
+                return f"Subnormal: sign:{sign}, exponent:{exponent_value + 1}, mantissa: 0.{self.mantissa}"
+        else:
+            return f"Normal: sign:{sign}, exponent:{exponent_value}, mantissa: 1.{self.mantissa}"
+
     def get_fp_expression(self) -> str:
         exponent_width = self.fp_fmt.exponent[0] - self.fp_fmt.exponent[1] + 1
-        exponent_bias = 2 ** (exponent_width - 1) - 1
-        exponent_value = self.get_exponent_value() - exponent_bias
-        if exponent_value == exponent_bias + 1:
-            if self.get_mantissa_value() == 0:
+        exponent_bias: int = 2 ** (exponent_width - 1) - 1
+        exponent_original = self.get_exponent_value()
+        exponent_effective = exponent_original - exponent_bias
+        mantissa_value = self.get_mantissa_value()
+
+        # Special case for FP8_E4M3 format
+        # according to OFP8 specification
+        if self.fmt_name == "FP8_E4M3":
+            return self.get_e4m3_expression(
+                exponent_effective, mantissa_value, self.sign
+            )
+
+        if exponent_effective == exponent_bias + 1:
+            if mantissa_value == 0:
                 return "+Inf" if self.is_positive() else "-Inf"
             else:
                 return "NaN"
-        elif self.get_exponent_value() == 0:
-            if self.get_mantissa_value() == 0:
+        elif exponent_original == 0:
+            if mantissa_value == 0:
                 return "+Zero" if self.is_positive() else "-Zero"
             else:
-                return f"Subnormal: sign:{self.sign}, exponent:{exponent_value + 1}, mantissa:{self.get_mantissa_value()}"
+                return f"Subnormal: sign:{self.sign}, exponent:{exponent_effective + 1}, mantissa: 0.{self.mantissa}"
         else:
-            return f"Normal: sign:{self.sign}, exponent:{exponent_value}, mantissa:{self.get_mantissa_value()}"
+            return f"Normal: sign:{self.sign}, exponent:{exponent_effective}, mantissa: 1.{self.mantissa}"
 
 
 class GUI(tk.Tk):
@@ -260,7 +285,7 @@ class GUI(tk.Tk):
             result.pack(pady=5)
             # 保存result_label到fp_extractors
             self.fp_extractors[name].result_label = result
-            self.create_bit_labels(name, bits_frame, self.fp_extractors[name].fp_fmt.width)
+            self.create_bit_labels(name, bits_frame)
 
     def _on_mousewheel(self, event, canvas):
         canvas.yview_scroll(int(-1 * (event.delta / 120)), "units")
@@ -277,7 +302,6 @@ class GUI(tk.Tk):
             entry.config(fg="grey")
             tmp_str = "0".zfill(self.fp_extractors[name].fp_fmt.width)
             self.update_bit_labels(name, tmp_str)
-
 
     def update_bits(self, fmt_name):
         extractor = self.fp_extractors[fmt_name]
@@ -299,8 +323,9 @@ class GUI(tk.Tk):
         else:
             extractor.result_label.config(text="Please start with [0x] or [0b]")
 
-    def create_bit_labels(self, fmt_name, frame, width):
+    def create_bit_labels(self, fmt_name, frame):
         fp_fmt = self.fp_extractors[fmt_name].fp_fmt
+        width = fp_fmt.width
 
         frame.columnconfigure((0, 1, 2), weight=1)
         frame.rowconfigure(0, weight=1)
