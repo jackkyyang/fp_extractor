@@ -254,19 +254,13 @@ class GUI(tk.Tk):
             bits_frame = tk.Frame(frame)
             bits_frame.pack(side="top", padx=5, pady=5, fill="y", expand=True)
             # 保存bits_frame到fp_extractors
-            self.fp_extractors[name].bits_frame = bits_frame
+            self.fp_extractors[name].entry = entry
 
             result = tk.Label(frame, text="", font=custom_font)
             result.pack(pady=5)
             # 保存result_label到fp_extractors
             self.fp_extractors[name].result_label = result
-            tmp_str = "0".zfill(self.fp_extractors[name].fp_fmt.width)
-            self.display_bits(
-                name,
-                tmp_str,
-                bits_frame,
-                self.fp_extractors[name].fp_fmt.width
-            )
+            self.create_bit_labels(name, bits_frame, self.fp_extractors[name].fp_fmt.width)
 
     def _on_mousewheel(self, event, canvas):
         canvas.yview_scroll(int(-1 * (event.delta / 120)), "units")
@@ -282,17 +276,12 @@ class GUI(tk.Tk):
             entry.insert(0, default_text)
             entry.config(fg="grey")
             tmp_str = "0".zfill(self.fp_extractors[name].fp_fmt.width)
-            self.display_bits(
-                name,
-                tmp_str,
-                self.fp_extractors[name].bits_frame,
-                self.fp_extractors[name].fp_fmt.width
-            )
+            self.update_bit_labels(name, tmp_str)
 
 
     def update_bits(self, fmt_name):
         extractor = self.fp_extractors[fmt_name]
-        input_str: str = extractor.bits_frame.master.winfo_children()[1].get()
+        input_str: str = extractor.entry.get()
         fp_str = input_str.strip().replace("_", "").lower()
         if len(fp_str) > 2 and (fp_str.startswith("0x") or fp_str.startswith("0b")):
             try:
@@ -302,9 +291,7 @@ class GUI(tk.Tk):
                 else:
                     bin_str = fp_str[2:].zfill(extractor.fp_fmt.width)
                     bin_str = bin_str[len(bin_str) - extractor.fp_fmt.width :]
-                self.display_bits(
-                    fmt_name, bin_str, extractor.bits_frame, extractor.fp_fmt.width
-                )
+                self.update_bit_labels(fmt_name, bin_str)
                 result_text = extractor.get_fp_expression()
             except ValueError as e:
                 result_text = str(e)
@@ -312,10 +299,7 @@ class GUI(tk.Tk):
         else:
             extractor.result_label.config(text="Please start with [0x] or [0b]")
 
-    def display_bits(self, fmt_name, bin_str, frame, width):
-        for widget in frame.winfo_children():
-            widget.destroy()
-
+    def create_bit_labels(self, fmt_name, frame, width):
         fp_fmt = self.fp_extractors[fmt_name].fp_fmt
 
         frame.columnconfigure((0, 1, 2), weight=1)
@@ -329,6 +313,8 @@ class GUI(tk.Tk):
 
         mantissa_frame = tk.Frame(frame)
         mantissa_frame.pack(side="left", fill="y", padx=5)
+
+        self.fp_extractors[fmt_name].bit_labels = []
 
         for i in range(width):
             parent_frame = (
@@ -358,7 +344,7 @@ class GUI(tk.Tk):
             )
             bit_label = tk.Label(
                 pos_frame,
-                text=bin_str[i],
+                text="0",
                 borderwidth=1,
                 relief="solid",
                 width=2,
@@ -366,6 +352,12 @@ class GUI(tk.Tk):
             )
             bit_position_label.pack(side="top", expand=True)
             bit_label.pack(side="top", expand=True)
+            self.fp_extractors[fmt_name].bit_labels.append(bit_label)
+
+    def update_bit_labels(self, fmt_name, bin_str):
+        bit_labels = self.fp_extractors[fmt_name].bit_labels
+        for i, bit_label in enumerate(bit_labels):
+            bit_label.config(text=bin_str[i])
 
 
 if __name__ == "__main__":
