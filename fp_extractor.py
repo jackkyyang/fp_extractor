@@ -357,7 +357,10 @@ class GUI(tk.Tk):
                 bg = "yellow"
             else:
                 parent_frame = mantissa_frame
-                bg = "#FFA500"
+                if i < width - fp_fmt.mantissa[1]:
+                    bg = "#FFA500"
+                else:
+                    bg = "grey"
 
             pos_frame = tk.Frame(parent_frame)
             pos_frame.pack(side="left", fill="y")
