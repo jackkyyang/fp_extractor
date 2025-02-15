@@ -255,7 +255,7 @@ class GUI(tk.Tk):
             label = tk.Label(frame, text=f"{name}", pady=4, font=bold_font)
             label.pack(side="top", padx=5)
 
-            entry = tk.Entry(frame, width=50, fg="grey")
+            entry = tk.Entry(frame, width=50, fg="grey", bg= "white")
             default_text = "hex start with [0x], bin start with [0b]"
             entry.insert(0, default_text)
             # 绑定输入框获取焦点事件
@@ -302,6 +302,7 @@ class GUI(tk.Tk):
             entry.config(fg="grey")
             tmp_str = "0".zfill(self.fp_extractors[name].fp_fmt.width)
             self.update_bit_labels(name, tmp_str)
+            self.fp_extractors[name].result_label.config(text="")
 
     def update_bits(self, fmt_name):
         extractor = self.fp_extractors[fmt_name]
