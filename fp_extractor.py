@@ -281,11 +281,24 @@ class GUI(tk.Tk):
             # 保存bits_frame到fp_extractors
             self.fp_extractors[name].entry = entry
 
-            result = tk.Label(frame, text="", font=custom_font)
-            result.pack(pady=5)
+            result = tk.Text(
+                frame,
+                wrap="word",
+                font=custom_font,
+                state="disabled",
+                bg="grey",
+                height=2,
+            )
+            result.pack(pady=5, expand=True)
             # 保存result_label到fp_extractors
-            self.fp_extractors[name].result_label = result
+            self.fp_extractors[name].result_str = result
             self.create_bit_labels(name, bits_frame)
+
+    def update_result(self, text:tk.Text, new_content:str):
+        text.config(state="normal")
+        text.delete("1.0", "end")
+        text.insert(tk.END ,new_content)
+        text.config(state="disabled")
 
     def _on_mousewheel(self, event, canvas):
         canvas.yview_scroll(int(-1 * (event.delta / 120)), "units")
@@ -302,7 +315,7 @@ class GUI(tk.Tk):
             entry.config(fg="grey")
             tmp_str = "0".zfill(self.fp_extractors[name].fp_fmt.width)
             self.update_bit_labels(name, tmp_str)
-            self.fp_extractors[name].result_label.config(text="")
+            self.update_result(self.fp_extractors[name].result_str, "")
 
     def update_bits(self, fmt_name):
         extractor = self.fp_extractors[fmt_name]
@@ -320,9 +333,9 @@ class GUI(tk.Tk):
                 result_text = extractor.get_fp_expression()
             except ValueError as e:
                 result_text = str(e)
-            extractor.result_label.config(text=result_text)
+            self.update_result(extractor.result_str, result_text)
         else:
-            extractor.result_label.config(text="Please start with [0x] or [0b]")
+            self.update_result(extractor.result_str, "Please start with [0x] or [0b]")
 
     def create_bit_labels(self, fmt_name, frame):
         fp_fmt = self.fp_extractors[fmt_name].fp_fmt
